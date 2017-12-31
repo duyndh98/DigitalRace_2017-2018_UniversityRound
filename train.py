@@ -2,7 +2,7 @@ from header import *
 
 def svm_visualize(_svm, _hog_descriptors, _labels):
 	print('\tProcessing...')
-	X = np.array(_hog_descriptors)[:, 1:]  # we only take the first two features.
+	X = np.array(_hog_descriptors)[:, 0:]  # we only take the first two features.
 	y = np.array([[x] for x in _labels])
 	plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.coolwarm, s = 20, edgecolors = 'k')
    
@@ -22,10 +22,21 @@ def svm_visualize(_svm, _hog_descriptors, _labels):
 	Z = Z.reshape(xx.shape)
 	plt.contourf(xx, yy, Z, cmap=plt.cm.coolwarm, alpha=0.7)
 
-	# plt.show()
-	plt.savefig('Visualize.png')
-    
 
+	# # Create a SVC classifier using an RBF kernel
+	# model = svm.SVC(kernel='rbf', random_state=0, gamma=.01, C=1)
+	# # Train the classifier
+	# X = np.array(_hog_descriptors)[:, :2]  # we only take the first two features.
+	# y = np.array([[x] for x in _labels])
+	# model.fit(X[:, :, 0], y.ravel())
+
+	# plot_decision_regions(X[:,:, 0], y, classifier=model)
+	# plt.legend(loc='upper left')
+	# plt.tight_layout()
+	
+	plt.savefig(visualize)
+	plt.show()
+	
 def load_train_datasets():
 	train_images = []
 	train_labels = []
@@ -42,10 +53,9 @@ def load_train_datasets():
 	return train_images
 
 def svm_training():
-	print('\tProcessing...')
-
 	# load hog descriptors and labels from train data file
 	train_hog_descriptors, train_labels = load_data_file(train_data_file)
+	print('\tProcessing...')
 
 	# init SVM model
 	svm = cv2.ml.SVM_create()
@@ -62,11 +72,14 @@ def svm_training():
 	return svm, train_hog_descriptors, train_labels
 
 def train():
-	
-	# After the first running, you can skip these steps at the next time 
+	'''
+	# After the first running, you can skip these steps at the next time
 	# by loading train_data file in svm_training() function
 	train_images = execute('Loading train datasets', load_train_datasets)
 	execute('HOG calculating', calculate_hog, train_images, train_data_file)
-	
+	'''
+	# C_range = np.logspace(-2, 10, 13)
+	# gamma_range = np.logspace(-9, 3, 13)
+
 	svm, train_hog_descriptors, train_labels = execute('Training', svm_training)
 	execute('SVM visualize', svm_visualize, svm, train_hog_descriptors, train_labels)

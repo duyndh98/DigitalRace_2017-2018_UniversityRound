@@ -8,16 +8,34 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from sklearn import datasets	
 from sklearn import svm
+from matplotlib.colors import ListedColormap
 
 C = 12.5
 gamma = 0.50625
 
 train_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\Dataset\Train\GTSRB_Final_Training_Images\Final_Training\Images'
-# train_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\Train\Datasets'
 test_dir = 	'D:\workspace\TrafficSignRecognitionAndDetection\Dataset\Test\GTSRB_Final_Test_Images\Final_Test\Images'
-svm_model_file = 'svm_model.xml'
+templates_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\Train\\templates'
+
+svm_model_file = '_' + str(C) + '_' + str(gamma) + '_svm_model.xml'
+confusion_matrix = '_' + str(C) + '_' + str(gamma) + '_confusion_matrix.png'
+visualize = '_' + str(C) + '_' + str(gamma) + '_visualize.png'
+
 train_data_file = 'train_data'
 test_data_file = 'test_data'
+video_input = 'video_input.avi'
+video_output = 'video_output.avi'
+output = 'output.txt'
+
+# threshold
+lower_red1 = np.array([0, 60, 60])
+upper_red1 = np.array([10, 255, 255])
+lower_red2 = np.array([160, 60, 60])
+upper_red2 = np.array([179, 255, 255])
+
+lower_blue = np.array([105, 60, 60])
+upper_blue = np.array([130, 255, 255])
+
 
 width = height = 48
 hog = cv2.HOGDescriptor(_winSize = (width, height),
@@ -32,6 +50,13 @@ hog = cv2.HOGDescriptor(_winSize = (width, height),
 						_gammaCorrection = 1,
 						_nlevels = 64, 
 						_signedGradient = True)
+
+def load_templates():
+	images = []
+	for img_dir in glob.glob(templates_dir + '\*'):
+		img = cv2.imread(img_dir)
+		images.append(img)
+	return images
 
 def load_datasets(_dir, _images, _labels):
 	# load all images and labels in the dir directory based on the .csv file
@@ -68,6 +93,7 @@ def calculate_hog(_images, _data_file):
 			f.write(' '.join(str(x[0]) for x in descriptor) + '\n')
 	
 def load_data_file(_data_file):
+	print('\tLoading data file')
 	hog_descriptors = []
 	labels = []
 	
@@ -101,3 +127,47 @@ def execute(_notification, _func, *_args):
 	print('Time: %fs' % (delta.seconds + delta.microseconds/1E6))
 	print('-----')
 	return result
+
+def versiontuple(v):
+    return tuple(map(int, (v.split("."))))
+
+
+def plot_decision_regions(X, y, classifier, test_idx=None, resolution=0.02):
+
+    # setup marker generator and color map
+    markers = ('s', 'x', 'o', '^', 'v')
+    colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
+    cmap = ListedColormap(colors[:len(np.unique(y))])
+
+    # plot the decision surface
+    x1_min, x1_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    x2_min, x2_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution),
+                           np.arange(x2_min, x2_max, resolution))
+    Z = classifier.predict(np.array([xx1.ravel(), xx2.ravel()]).T)
+    Z = Z.reshape(xx1.shape)
+    plt.contourf(xx1, xx2, Z, alpha=0.4, cmap=cmap)
+    plt.xlim(xx1.min(), xx1.max())
+    plt.ylim(xx2.min(), xx2.max())
+
+    for idx, cl in enumerate(np.unique(y)):
+        plt.scatter(x=X[y == cl, 0], y=X[y == cl, 1],
+                    alpha=0.8, c=cmap(idx),
+                    marker=markers[idx], label=cl)
+
+    # highlight test samples
+    if test_idx:
+        # plot all samples
+        if not versiontuple(np.__version__) >= versiontuple('1.9.0'):
+            X_test, y_test = X[list(test_idx), :], y[list(test_idx)]
+            warnings.warn('Please update to NumPy 1.9.0 or newer')
+        else:
+            X_test, y_test = X[test_idx, :], y[test_idx]
+
+        plt.scatter(X_test[:, 0],
+                    X_test[:, 1],
+                    c='',
+                    alpha=1.0,
+                    linewidths=1,
+                    marker='o',
+                    s=55, label='test set')
