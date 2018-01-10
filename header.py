@@ -15,8 +15,7 @@ gamma = 0.50625
 
 train_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\Dataset\Train\GTSRB_Final_Training_Images\Final_Training\Images'
 test_dir = 	'D:\workspace\TrafficSignRecognitionAndDetection\Dataset\Test\GTSRB_Final_Test_Images\Final_Test\Images'
-templates_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\Train\\templates'
-
+templates_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\\traffic_sign'
 svm_model_file = '_' + str(C) + '_' + str(gamma) + '_svm_model.xml'
 confusion_matrix = '_' + str(C) + '_' + str(gamma) + '_confusion_matrix.png'
 visualize = '_' + str(C) + '_' + str(gamma) + '_visualize.png'
@@ -36,7 +35,7 @@ upper_red2 = np.array([179, 255, 255])
 lower_blue = np.array([105, 60, 60])
 upper_blue = np.array([130, 255, 255])
 
-
+# HOG feature
 width = height = 48
 hog = cv2.HOGDescriptor(_winSize = (width, height),
 						_blockSize = (width // 2, height // 2),
@@ -53,34 +52,31 @@ hog = cv2.HOGDescriptor(_winSize = (width, height),
 
 def load_templates():
 	images = []
-	for img_dir in glob.glob(templates_dir + '\*'):
+	for img_dir in glob.glob(templates_dir + '\*.jpg'):
 		img = cv2.imread(img_dir)
+		img = cv2.resize(img, (width, height))
 		images.append(img)
-	return images
+
+	titles = []
+	with open(templates_dir + '\\titles.txt') as f:
+		for line in f:
+			titles.append(line.replace('\n', ''))
+
+	print(titles)
+	return images, titles
 
 def load_datasets(_dir, _images, _labels):
-	# load all images and labels in the dir directory based on the .csv file
-	csv_dir = glob.glob(_dir + '\*.csv')[0]	
+	print('\tProcessing...')
+	for img_dir in glob.glob(_dir + '\*'):
+		img = cv2.imread(img_dir)
+		img_height, img_width, img_channel = img.shape
+		img = cv2.resize(img, (width, height))
+		cv2.imwrite(img_dir, img)
 
-	with open(csv_dir, 'r') as f:
-		# get the number of .ppm file	
-		n_datasets = f.read().count('ppm')
-		print('\tn datasets:', n_datasets)
-		print('\tProcessing...')
-		f.seek(0, 0)
+		gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+		_images.append(gray_img)
+		_labels.append(int(_dir.split('\\')[-1]))
 		
-		# skip the first line of .csv
-		f.readline()
-		# read each line in the file
-		for line in f:
-			filename, w, h, x1, y1, x2, y2, classId = line.replace('\n', '').split(';')
-			img = cv2.imread(_dir + '\\' + filename, 0)
-			# crop and scale the image
-			img = img[int(y1):int(y2), int(x1):int(x2)]	
-			img = cv2.resize(img, (width, height))
-			_images.append(img)
-			_labels.append(int(classId))
-
 def calculate_hog(_images, _data_file):
 	print('\tProcessing...')
 	n_datasets = len(_images)

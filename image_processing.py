@@ -26,7 +26,7 @@ def find_contour(_img, _mask):
     for contour in contours:
         [x, y, w, h] = bound = cv2.boundingRect(contour)
         
-        if (0.6 < w / h < 1.4) and (w / width > 0.02) and (h / height > 0.02):
+        if (0.6 < w / h < 1.4) and (w > 20) and (h > 20):
             if w * h > max_area:
                 max_area = w * h
                 max_bound = bound                
@@ -46,7 +46,7 @@ def classify_image(_image, _svm):
     descriptor = hog.compute(_image)
     return int(_svm.predict(np.array([descriptor]))[1][0])
 
-def process_image(_img, _svm, _templates, _file, _frame_id):
+def process_image(_img, _svm, _templates, _templates_title, _file, _frame_id):
     ycrcb_equalize(_img)
     hsv = cv2.cvtColor(_img, cv2.COLOR_BGR2HSV)
     mask = get_mask(hsv)
@@ -58,22 +58,26 @@ def process_image(_img, _svm, _templates, _file, _frame_id):
         traffic_sign = _img[y:(y + h), x:(x + w)]
         traffic_sign = cv2.resize(traffic_sign, (width, height))
         class_id = classify_image(traffic_sign, _svm)
-        
+        '''
         # show template sign on the down-right of sign detected
         if (x + w + width < _img.shape[1]) and (y + height < _img.shape[0]):
-            _img[y:(y + height), (x + w):(x + w + width)] = _templates[class_id]
+            _img[y:(y + height), (x + w):(x + w + width)] = _templates[class_id - 1]
         # show template sign on the up-right of sign detected
         elif x + w + width < _img.shape[1]:
-            _img[(y - height + h):(y+h), (x + w):(x + w + width)] = _templates[class_id]
+            _img[(y - height + h):(y+h), (x + w):(x + w + width)] = _templates[class_id - 1]
         # show template sign on the down-left of sign detected
         elif y + height < _img.shape[0]:
-            _img[y:(y + height), (x - width):x] = _templates[class_id]
+            _img[y:(y + height), (x - width):x] = _templates[class_id - 1]
         # show template sign on the up-left of sign detected
         else:
-            _img[(y - height + h):(y+h), (x - width):x] = _templates[class_id]
-
+            _img[(y - height + h):(y+h), (x - width):x] = _templates[class_id - 1]
+        '''
         # draw contour
         cv2.rectangle(_img, (x, y), (x + w, y + h), (0, 255, 0), 1)
+        
+        # show traffic sign infomation
+        cv2.putText(_img, _templates_title[class_id - 1], (x,y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+
         # save the traffic sign info to file
         _file.write(' '.join(str(x) for x in [_frame_id, class_id, x, y, x + w, y + w, '\n']))
     
