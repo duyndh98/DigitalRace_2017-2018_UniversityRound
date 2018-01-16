@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import glob
 import sys
+import os
 sys.path.append('C:\Program Files\Python36\Lib\site-packages\libsvm-3.22\python')
 from svmutil import *
 from datetime import datetime
@@ -9,35 +10,50 @@ import matplotlib.pyplot as plt
 from sklearn import datasets	
 from sklearn import svm
 from matplotlib.colors import ListedColormap
+import math
 
 C = 12.5
 gamma = 0.50625
 
-train_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\Dataset\Train\GTSRB_Final_Training_Images\Final_Training\Images'
-test_dir = 	'D:\workspace\TrafficSignRecognitionAndDetection\Dataset\Test\GTSRB_Final_Test_Images\Final_Test\Images'
-templates_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\\traffic_sign'
-svm_model_file = '_' + str(C) + '_' + str(gamma) + '_svm_model.xml'
-confusion_matrix = '_' + str(C) + '_' + str(gamma) + '_confusion_matrix.png'
-visualize = '_' + str(C) + '_' + str(gamma) + '_visualize.png'
+train_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\Contest\datasets\Images'
+templates_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\\Contest\\templates'
+
+svm_model_file = 'svm_model_' + str(C) + '_' + str(gamma) + '.xml'
+confusion_matrix = 'confusion_matrix_' + str(C) + '_' + str(gamma) + '.png'
+visualize = 'visualize_' + str(C) + '_' + str(gamma) + '.png'
 
 train_data_file = 'train_data'
-test_data_file = 'test_data'
 video_input = 'video_input.avi'
 video_output = 'video_output.avi'
 output = 'output.txt'
 
+normal_width = 640
+normal_height = 480
+
 # threshold
 lower_red1 = np.array([0, 60, 60])
-upper_red1 = np.array([10, 255, 255])
-lower_red2 = np.array([160, 60, 60])
-upper_red2 = np.array([179, 255, 255])
+upper_red1 = np.array([15, 255, 255])
+lower_red2 = np.array([145, 60, 60])
+upper_red2 = np.array([180, 255, 255])
 
-lower_blue = np.array([105, 60, 60])
-upper_blue = np.array([130, 255, 255])
+lower_blue = np.array([100,60, 60])
+upper_blue = np.array([110,255,255])
+
+lower_black = np.array([0, 60, 60])
+upper_black = np.array([180, 255, 100])
+
+lower_white = np.array([0, 10, 200])
+upper_white = np.array([180, 40, 255])
+
+lower_gray = np.array([0, 0, 0])
+upper_gray = np.array([180, 50, 255])
+
+lower_brown = np.array([10, 10, 0])
+upper_brown = np.array([20, 255, 200])
 
 # HOG feature
 width = height = 48
-hog = cv2.HOGDescriptor(_winSize = (width, height),
+hog = cv2.HOGDescriptor(_winSize = (width, height), 
 						_blockSize = (width // 2, height // 2),
 						_blockStride = (width // 4, height // 4),
 						_cellSize = (width // 2, height // 2),
@@ -49,6 +65,19 @@ hog = cv2.HOGDescriptor(_winSize = (width, height),
 						_gammaCorrection = 1,
 						_nlevels = 64, 
 						_signedGradient = True)
+
+def deskew(img):
+    m = cv2.moments(img)
+    if abs(m['mu02']) < 1e-2:
+        # no deskewing needed. 
+        return img.copy()
+    # Calculate skew based on central momemts. 
+    skew = m['mu11']/m['mu02']
+    # Calculate affine transform to correct skewness. 
+    M = np.float32([[1, skew, -0.5*width*skew], [0, 1, 0]])
+    # Apply affine transform
+    img = cv2.warpAffine(img, M, (width, height), flags=cv2.WARP_INVERSE_MAP | cv2.INTER_LINEAR)
+    return img
 
 def load_templates():
 	images = []
@@ -65,17 +94,23 @@ def load_templates():
 	print(titles)
 	return images, titles
 
-def load_datasets(_dir, _images, _labels):
-	print('\tProcessing...')
-	for img_dir in glob.glob(_dir + '\*'):
-		img = cv2.imread(img_dir)
-		img_height, img_width, img_channel = img.shape
-		img = cv2.resize(img, (width, height))
-		cv2.imwrite(img_dir, img)
+def extract_video_datasets(_dir):
+	print(_dir)
+	for vid_dir in glob.glob(_dir + '\*.mp4'):
+		if not os.path.exists(vid_dir.split('.')[0]):
+			os.makedirs(vid_dir.split('.')[0])
+		
+		print('\t' + vid_dir.split('.')[0])
+		print('\tProcessing...')
+		video = cv2.VideoCapture(vid_dir)
+		frame_id = 0
 
-		gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-		_images.append(gray_img)
-		_labels.append(int(_dir.split('\\')[-1]))
+		while video.isOpened():
+			ret, frame = video.read()
+			if not ret:
+				break
+			cv2.imwrite(vid_dir.split('.')[0] + '\\' + str(frame_id).zfill(5) + '_dark.jpg', frame) # save frame as JPEG file
+			frame_id += 1
 		
 def calculate_hog(_images, _data_file):
 	print('\tProcessing...')
@@ -89,7 +124,7 @@ def calculate_hog(_images, _data_file):
 			f.write(' '.join(str(x[0]) for x in descriptor) + '\n')
 	
 def load_data_file(_data_file):
-	print('\tLoading data file')
+	print('\tProcessing...')
 	hog_descriptors = []
 	labels = []
 	
@@ -123,47 +158,3 @@ def execute(_notification, _func, *_args):
 	print('Time: %fs' % (delta.seconds + delta.microseconds/1E6))
 	print('-----')
 	return result
-
-def versiontuple(v):
-    return tuple(map(int, (v.split("."))))
-
-
-def plot_decision_regions(X, y, classifier, test_idx=None, resolution=0.02):
-
-    # setup marker generator and color map
-    markers = ('s', 'x', 'o', '^', 'v')
-    colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
-    cmap = ListedColormap(colors[:len(np.unique(y))])
-
-    # plot the decision surface
-    x1_min, x1_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-    x2_min, x2_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution),
-                           np.arange(x2_min, x2_max, resolution))
-    Z = classifier.predict(np.array([xx1.ravel(), xx2.ravel()]).T)
-    Z = Z.reshape(xx1.shape)
-    plt.contourf(xx1, xx2, Z, alpha=0.4, cmap=cmap)
-    plt.xlim(xx1.min(), xx1.max())
-    plt.ylim(xx2.min(), xx2.max())
-
-    for idx, cl in enumerate(np.unique(y)):
-        plt.scatter(x=X[y == cl, 0], y=X[y == cl, 1],
-                    alpha=0.8, c=cmap(idx),
-                    marker=markers[idx], label=cl)
-
-    # highlight test samples
-    if test_idx:
-        # plot all samples
-        if not versiontuple(np.__version__) >= versiontuple('1.9.0'):
-            X_test, y_test = X[list(test_idx), :], y[list(test_idx)]
-            warnings.warn('Please update to NumPy 1.9.0 or newer')
-        else:
-            X_test, y_test = X[test_idx, :], y[test_idx]
-
-        plt.scatter(X_test[:, 0],
-                    X_test[:, 1],
-                    c='',
-                    alpha=1.0,
-                    linewidths=1,
-                    marker='o',
-                    s=55, label='test set')
