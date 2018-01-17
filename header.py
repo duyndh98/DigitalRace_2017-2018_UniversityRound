@@ -30,27 +30,32 @@ output = 'output.txt'
 normal_width = 640
 normal_height = 480
 
+blue_template_id = [2, 3, 8]
+red_template_id = [1, 4, 5, 6, 7]
+blue_red_template_id = [9]
+white_black_template_id = [10]
+
 # threshold
-lower_red1 = np.array([0, 60, 60])
+lower_red1 = np.array([0, 80, 80])
 upper_red1 = np.array([15, 255, 255])
-lower_red2 = np.array([145, 60, 60])
+lower_red2 = np.array([145, 80, 80])
 upper_red2 = np.array([180, 255, 255])
 
-lower_blue = np.array([100,60, 60])
-upper_blue = np.array([110,255,255])
+lower_blue = np.array([95, 80, 80])
+upper_blue = np.array([110, 255, 255])
 
-lower_black = np.array([0, 60, 60])
-upper_black = np.array([180, 255, 100])
+lower_black = np.array([0, 0, 0])
+upper_black = np.array([180, 255, 30])
 
-lower_white = np.array([0, 10, 200])
-upper_white = np.array([180, 40, 255])
-
+lower_white = np.array([0, 0, 190])
+upper_white = np.array([180, 50, 255])
+'''
 lower_gray = np.array([0, 0, 0])
 upper_gray = np.array([180, 50, 255])
 
 lower_brown = np.array([10, 10, 0])
 upper_brown = np.array([20, 255, 200])
-
+'''
 # HOG feature
 width = height = 48
 hog = cv2.HOGDescriptor(_winSize = (width, height), 
@@ -109,7 +114,7 @@ def extract_video_datasets(_dir):
 			ret, frame = video.read()
 			if not ret:
 				break
-			cv2.imwrite(vid_dir.split('.')[0] + '\\' + str(frame_id).zfill(5) + '_dark.jpg', frame) # save frame as JPEG file
+			cv2.imwrite(vid_dir.split('.')[0] + '\\' + str(frame_id).zfill(5) + '_light_03.jpg', frame) # save frame as JPEG file
 			frame_id += 1
 		
 def calculate_hog(_images, _data_file):
@@ -158,3 +163,14 @@ def execute(_notification, _func, *_args):
 	print('Time: %fs' % (delta.seconds + delta.microseconds/1E6))
 	print('-----')
 	return result
+'''
+class_dir = 'D:\workspace\TrafficSignRecognitionAndDetection\Contest\datasets\Images\\00035'
+print(class_dir + '\\GT-' + class_dir.split('\\')[-1] + '.csv')
+with open(class_dir + '\\GT-' + class_dir.split('\\')[-1] + '.csv', 'r') as f:
+	f.readline()
+	for line in f:
+		[file_name, width, height, x1, y1, x2, y2, class_id] = line.split(';')
+		img = cv2.imread(class_dir + '\\' + file_name)
+		img = img[int(x1):int(x2), int(y1):int(y2)]
+		cv2.imwrite(class_dir + '\\' + 'crop_' + class_dir.split('\\')[-1] + '_' + file_name, img)
+'''

@@ -68,11 +68,10 @@ def train():
 	# After the first running, you can skip these steps at the next time
 	execute('\tExtracting video datasets', extract_video_datasets, train_dir)
 	'''
-	'''
 	# After the first running, you can skip these steps at the next time
 	# by loading train_data file in svm_training() function
 	train_images = execute('Loading train datasets', load_train_datasets)
 	execute('HOG calculating', calculate_hog, train_images, train_data_file)
-	'''
+	
 	svm, train_hog_descriptors, train_labels = execute('Train', svm_training)
 	
