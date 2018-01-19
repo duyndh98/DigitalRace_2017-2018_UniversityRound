@@ -64,10 +64,6 @@ def create_train_datasets(_dir):
 			cv2.imwrite(img_dir.split('.')[0] + '_img.jpg', img)
 
 def train():
-	'''
-	# After the first running, you can skip these steps at the next time
-	execute('\tExtracting video datasets', extract_video_datasets, train_dir)
-	'''
 	# After the first running, you can skip these steps at the next time
 	# by loading train_data file in svm_training() function
 	train_images = execute('Loading train datasets', load_train_datasets)

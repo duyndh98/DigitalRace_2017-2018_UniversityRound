@@ -1,3 +1,4 @@
+
 from header import *
 from train import *
 from image_processing import *
@@ -28,7 +29,8 @@ def process_video():
 	
 	print('Video is running')
 	info = []
-	frame_id = 0
+	
+	frame_id = 1
 	while inp.isOpened():
 		ret, frame = inp.read()
 		if (not ret) or (cv2.waitKey(1) & 0xFF == ord('q')):

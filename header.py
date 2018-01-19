@@ -30,18 +30,18 @@ output = 'output.txt'
 normal_width = 640
 normal_height = 480
 
-blue_template_id = [2, 3, 8]
-red_template_id = [1, 4, 5, 6, 7]
-blue_red_template_id = [9]
-white_black_template_id = [10]
+blue_templates_id = [2, 3, 8]
+red_templates_id = [1, 4, 5, 6, 7]
+blue_red_templates_id = [9]
+white_black_templates_id = [10]
 
 # threshold
-lower_red1 = np.array([0, 80, 80])
+lower_red1 = np.array([0, 40, 40])
 upper_red1 = np.array([15, 255, 255])
-lower_red2 = np.array([145, 80, 80])
+lower_red2 = np.array([145, 60, 60])
 upper_red2 = np.array([180, 255, 255])
 
-lower_blue = np.array([95, 80, 80])
+lower_blue = np.array([95, 40, 40])
 upper_blue = np.array([110, 255, 255])
 
 lower_black = np.array([0, 0, 0])
